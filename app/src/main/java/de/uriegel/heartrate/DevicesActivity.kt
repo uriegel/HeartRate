@@ -32,7 +32,7 @@ class DevicesActivity : AppCompatActivity() {
             bleScanner?.stopScan(scanCallback)
         }, SCAN_PERIOD)
         scanning = true
-        bleScanner?.startScan(null, scanSettings, scanCallback)
+        bleScanner?.startScan(scanCallback)
     }
 
     private val bluetoothAdapter: BluetoothAdapter = BluetoothAdapter.getDefaultAdapter()

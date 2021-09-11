@@ -17,7 +17,7 @@ class DevicesAdapter()
     }
 
     fun addDevice(device: BluetoothDevice) {
-        if (!devices.contains(device)) {
+        if (!devices.any { it.address == device.address}) {
             devices.add(device)
             notifyDataSetChanged()
         }
