@@ -11,9 +11,10 @@ import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import android.widget.Toast
+import androidx.recyclerview.widget.LinearLayoutManager
 import de.uriegel.activityextensions.ActivityRequest
-import de.uriegel.activityextensions.async.delay
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -27,6 +28,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
             val result = activityRequest.checkAndAccessPermissions(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION))
             if (result.any { !it.value }) {
                 Toast.makeText(this@MainActivity, "Kein Zugriff auf den Standort", Toast.LENGTH_LONG).show()
+                finish()
                 return@launch
             }
 
@@ -34,42 +36,23 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
                 val backgroundResult = activityRequest.checkAndAccessPermissions(arrayOf(Manifest.permission.ACCESS_BACKGROUND_LOCATION))
                 if (backgroundResult.any { !it.value }) {
                     Toast.makeText(this@MainActivity, "Kein ständiger Zugriff auf den Standort", Toast.LENGTH_LONG).show()
+                    finish()
                     return@launch
                 }
             }
 
+            val bluetoothAdapter: BluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
             if (!bluetoothAdapter.isEnabled) {
                 val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
                 val res = activityRequest.launch(enableBtIntent)
             }
-
-            bleScanner = bluetoothAdapter.bluetoothLeScanner
-            bleScanner?.startScan(null, scanSettings, scanCallback)
         }
     }
 
-    private val scanCallback = object : ScanCallback() {
-        override fun onScanResult(callbackType: Int, result: ScanResult) {
-            with(result.device) {
-                if (device == null) {
-                    Log.i("BLE","Found BLE device! Name: ${name ?: "Unnamed"}, address: $address")
-                    device = address
-                }
-            }
-        }
-
-        override fun onScanFailed(errorCode: Int) {
-            Log.e("BLE", "onScanFailed: code $errorCode")
-        }
+    fun onScan(view: View) {
+        startActivity(Intent(this@MainActivity, DevicesActivity::class.java))
     }
 
     override val coroutineContext = Dispatchers.Main
-
-    private var device: String? = null
-    var bleScanner: BluetoothLeScanner? = null
     private val activityRequest = ActivityRequest(this)
-    private val bluetoothAdapter: BluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
-    private val scanSettings = ScanSettings.Builder()
-        .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
-        .build()
 }

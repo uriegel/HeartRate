@@ -16,6 +16,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.HeartRate">
         <activity
+            android:name=".DevicesActivity"
+            android:exported="true" />
+        <activity
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
