@@ -8,12 +8,16 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.Adapter
 
-class DevicesAdapter()
+class DevicesAdapter(private val clickListener: ((track: BluetoothDevice)->Unit))
     : Adapter<DevicesAdapter.ViewHolder>() {
 
-    class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+    class ViewHolder(view: View, val clickListener: ((track: BluetoothDevice)->Unit)) : RecyclerView.ViewHolder(view) {
         var deviceNameView: TextView = view.findViewById(R.id.name)
+        var device: BluetoothDevice? = null
         var deviceAddressView: TextView = view.findViewById(R.id.address)
+        init {
+            view.setOnClickListener{clickListener(device!!)}
+        }
     }
 
     fun addDevice(device: BluetoothDevice) {
@@ -25,10 +29,11 @@ class DevicesAdapter()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val v = LayoutInflater.from(parent.context).inflate(R.layout.device, parent, false)
-        return ViewHolder(v)
+        return ViewHolder(v, clickListener)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        holder.device = devices[position]
         holder.deviceNameView.text = devices[position].name
         holder.deviceAddressView.text = devices[position].address
     }

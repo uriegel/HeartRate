@@ -49,10 +49,26 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
         }
     }
 
-    fun onScan(view: View) {
-        startActivity(Intent(this@MainActivity, DevicesActivity::class.java))
+    fun onScanHeartRate(view: View) {
+        scan(HEART_RATE_UUID)
     }
 
+    fun onScanBike(view: View) {
+        scan(BIKE_UUID)
+    }
+
+    private fun scan(uuid: String) {
+        launch {
+            val intent = Intent(this@MainActivity, DevicesActivity::class.java)
+            intent.putExtra("UUID", uuid)
+            val result = activityRequest.launch(intent)
+            val address = result.data?.getStringExtra(DevicesActivity.RESULT_DEVICE)
+            Toast.makeText(this@MainActivity, address, Toast.LENGTH_LONG).show()
+        }
+    }
+
+    val HEART_RATE_UUID = "0000180D-0000-1000-8000-00805f9b34fb"
+    val BIKE_UUID = "00001816-0000-1000-8000-00805f9b34fb"
     override val coroutineContext = Dispatchers.Main
     private val activityRequest = ActivityRequest(this)
 }
