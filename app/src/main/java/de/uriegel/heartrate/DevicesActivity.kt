@@ -10,13 +10,13 @@ import android.os.ParcelUuid
 import android.util.Log
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
-import kotlinx.android.synthetic.main.activity_devices.*
-import javax.xml.transform.Result
+import de.uriegel.heartrate.databinding.ActivityDevicesBinding
 
 class DevicesActivity() : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_devices)
+        binding = ActivityDevicesBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
         val serviceUuid = if (savedInstanceState == null) {
             val extras = intent.extras
@@ -26,11 +26,11 @@ class DevicesActivity() : AppCompatActivity() {
 
         val layoutManager = LinearLayoutManager(this)
         layoutManager.orientation = LinearLayoutManager.VERTICAL
-        devices.layoutManager = layoutManager
+        binding.devices.layoutManager = layoutManager
         val itemDecoration = DividerItemDecoration(this, DividerItemDecoration.VERTICAL)
-        devices.addItemDecoration(itemDecoration)
-        devices.setHasFixedSize(true)
-        devices.adapter = devicesAdapter
+        binding.devices.addItemDecoration(itemDecoration)
+        binding.devices.setHasFixedSize(true)
+        binding.devices.adapter = devicesAdapter
 
         val scanFilter = ScanFilter.Builder()
             .setServiceUuid(ParcelUuid.fromString(serviceUuid))
@@ -53,8 +53,6 @@ class DevicesActivity() : AppCompatActivity() {
 
     private val scanCallback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult) {
-            var uuids = result.scanRecord?.serviceUuids;
-
             devicesAdapter.addDevice(result.device)
         }
 
@@ -76,4 +74,5 @@ class DevicesActivity() : AppCompatActivity() {
         setResult(RESULT_OK, intent)
         finish()
     }
+    private lateinit var binding: ActivityDevicesBinding
 }

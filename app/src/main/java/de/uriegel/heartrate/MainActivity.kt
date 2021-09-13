@@ -6,12 +6,10 @@ import android.content.*
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.os.IBinder
-import android.util.Log
 import android.view.View
 import android.widget.Toast
 import de.uriegel.activityextensions.ActivityRequest
-import kotlinx.android.synthetic.main.activity_main.*
+import de.uriegel.heartrate.databinding.ActivityMainBinding
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -19,16 +17,17 @@ import kotlinx.coroutines.launch
 class MainActivity : AppCompatActivity(), CoroutineScope {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
         val preferences = getSharedPreferences("default", MODE_PRIVATE)
         preferences?.getString(HEARTRATE_ADDRESS, null)?.let {
             heartRateAddress = it
-            btnHeartRate.isEnabled = true
+            binding.btnHeartRate.isEnabled = true
         }
         preferences?.getString(BIKE_ADDRESS, null)?.let {
             bikeAddress = it
-            btnBike.isEnabled = true
+            binding.btnBike.isEnabled = true
         }
 
         launch {
@@ -51,7 +50,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
             val bluetoothAdapter: BluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
             if (!bluetoothAdapter.isEnabled) {
                 val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
-                val res = activityRequest.launch(enableBtIntent)
+                activityRequest.launch(enableBtIntent)
             }
         }
     }
@@ -59,18 +58,18 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
     fun onScanHeartRate(view: View) {
         launch {
             heartRateAddress = scan(BluetoothLeService.HEART_RATE_UUID)
-            btnHeartRate.isEnabled = heartRateAddress != null
+            binding.btnHeartRate.isEnabled = heartRateAddress != null
             val preferences = getSharedPreferences("default", MODE_PRIVATE)
-            preferences?.edit()?.putString(HEARTRATE_ADDRESS, heartRateAddress)?.commit()
+            preferences?.edit()?.putString(HEARTRATE_ADDRESS, heartRateAddress)?.apply()
         }
     }
 
     fun onScanBike(view: View) {
         launch {
             bikeAddress = scan(BluetoothLeService.BIKE_UUID)
-            btnBike.isEnabled = bikeAddress != null
+            binding.btnBike.isEnabled = bikeAddress != null
             val preferences = getSharedPreferences("default", MODE_PRIVATE)
-            preferences?.edit()?.putString(BIKE_ADDRESS, bikeAddress)?.commit()
+            preferences?.edit()?.putString(BIKE_ADDRESS, bikeAddress)?.apply()
         }
     }
 
@@ -96,5 +95,6 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
     private var heartRateAddress: String? = null
     private var bikeAddress: String? = null
     private val activityRequest = ActivityRequest(this)
+    private lateinit var binding: ActivityMainBinding
 }
 

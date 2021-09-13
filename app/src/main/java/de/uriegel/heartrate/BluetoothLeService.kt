@@ -60,9 +60,9 @@ class BluetoothLeService : Service() {
         override fun onServicesDiscovered(gatt: BluetoothGatt?, status: Int) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 bluetoothGatt?.services?.let {
-                    val service = it.find { it.uuid == UUID.fromString(BluetoothLeService.HEART_RATE_UUID) }
+                    val service = it.find { it.uuid == UUID.fromString(HEART_RATE_UUID) }
                     service?.let {
-                        val heartCharacteristics = it.characteristics?.find { it.uuid == UUID.fromString(BluetoothLeService.HEART_RATE_CHARACTERISTICS_ID) }
+                        val heartCharacteristics = it.characteristics?.find { it.uuid == UUID.fromString(HEART_RATE_CHARACTERISTICS_ID) }
                         heartCharacteristics?.let {
                             val flag = it.properties
                             val format = when (flag and 0x01) {
@@ -77,7 +77,7 @@ class BluetoothLeService : Service() {
                             }
                             bluetoothGatt!!.setCharacteristicNotification(it, true)
                             // TODO: only Heart Rate
-                            val descriptor = it.getDescriptor(UUID.fromString(BluetoothLeService.CLIENT_CHARACTERISTICS_ID))
+                            val descriptor = it.getDescriptor(UUID.fromString(CLIENT_CHARACTERISTICS_ID))
                             descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
                             bluetoothGatt!!.writeDescriptor(descriptor)
                         }
@@ -101,12 +101,18 @@ class BluetoothLeService : Service() {
                 }
             }
             val heartRate = characteristic.getIntValue(format, 1)
-            val test = heartRate + 9
+            broadcastHeartRateUpdate(heartRate)
         }
     }
 
     private fun broadcastUpdate(action: String) {
         val intent = Intent(action)
+        sendBroadcast(intent)
+    }
+
+    private fun broadcastHeartRateUpdate(rate: Int) {
+        val intent = Intent(ACTION_GATT_HEART_RATE)
+        intent.putExtra(HEART_RATE, rate)
         sendBroadcast(intent)
     }
 
@@ -132,6 +138,8 @@ class BluetoothLeService : Service() {
         const val DEVICE_ADDRESS = "DEVICE_ADDRESS"
         const val ACTION_GATT_CONNECTED = "de.uriegel.heartrate.ACTION_GATT_CONNECTED"
         const val ACTION_GATT_DISCONNECTED = "de.uriegel.heartrate.ACTION_GATT_DISCONNECTED"
+        const val ACTION_GATT_HEART_RATE = "de.uriegel.heartrate.ACTION_DATA_AVAILABLE"
+        const val HEART_RATE = "HEART_RATE"
         private const val STATE_DISCONNECTED = 0
         private const val STATE_CONNECTED = 2
     }

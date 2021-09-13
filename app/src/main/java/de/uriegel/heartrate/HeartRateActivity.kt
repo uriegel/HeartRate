@@ -5,11 +5,13 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.IBinder
 import android.util.Log
+import de.uriegel.heartrate.databinding.ActivityHeartRateBinding
 
 class HeartRateActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_heart_rate)
+        binding = ActivityHeartRateBinding.inflate(layoutInflater)
+        setContentView(binding.root)
         if (deviceAddress != null) {
             val gattServiceIntent = Intent(this, BluetoothLeService::class.java)
             bindService(gattServiceIntent, heartRateServiceConnection, Context.BIND_AUTO_CREATE)
@@ -39,6 +41,9 @@ class HeartRateActivity : AppCompatActivity() {
                 BluetoothLeService.ACTION_GATT_DISCONNECTED -> {
                     // connected = false
                 }
+                BluetoothLeService.ACTION_GATT_HEART_RATE -> {
+                    binding.textViewHeartRate.text = intent.getIntExtra(BluetoothLeService.HEART_RATE, 0).toString()
+                }
             }
         }
     }
@@ -47,6 +52,7 @@ class HeartRateActivity : AppCompatActivity() {
         return IntentFilter().apply {
             addAction(BluetoothLeService.ACTION_GATT_CONNECTED)
             addAction(BluetoothLeService.ACTION_GATT_DISCONNECTED)
+            addAction(BluetoothLeService.ACTION_GATT_HEART_RATE)
         }
     }
 
@@ -72,6 +78,7 @@ class HeartRateActivity : AppCompatActivity() {
         val preferences = getSharedPreferences("default", MODE_PRIVATE)
         preferences.getString(MainActivity.HEARTRATE_ADDRESS, null)
     }
+    private lateinit var binding: ActivityHeartRateBinding
 }
 
 private const val TAG = "HR"
