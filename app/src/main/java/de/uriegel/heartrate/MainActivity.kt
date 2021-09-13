@@ -21,7 +21,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val preferences = this.getPreferences(MODE_PRIVATE)
+        val preferences = getSharedPreferences("default", MODE_PRIVATE)
         preferences?.getString(HEARTRATE_ADDRESS, null)?.let {
             heartRateAddress = it
             btnHeartRate.isEnabled = true
@@ -58,78 +58,25 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
 
     fun onScanHeartRate(view: View) {
         launch {
-            heartRateAddress = scan(HEART_RATE_UUID)
+            heartRateAddress = scan(BluetoothLeService.HEART_RATE_UUID)
             btnHeartRate.isEnabled = heartRateAddress != null
-            val preferences = this@MainActivity.getPreferences(MODE_PRIVATE)
+            val preferences = getSharedPreferences("default", MODE_PRIVATE)
             preferences?.edit()?.putString(HEARTRATE_ADDRESS, heartRateAddress)?.commit()
         }
     }
 
     fun onScanBike(view: View) {
         launch {
-            bikeAddress = scan(BIKE_UUID)
+            bikeAddress = scan(BluetoothLeService.BIKE_UUID)
             btnBike.isEnabled = bikeAddress != null
-            val preferences = this@MainActivity.getPreferences(MODE_PRIVATE)
+            val preferences = getSharedPreferences("default", MODE_PRIVATE)
             preferences?.edit()?.putString(BIKE_ADDRESS, bikeAddress)?.commit()
         }
     }
 
     fun startHeartRate(view: View) {
-        val gattServiceIntent = Intent(this, BluetoothLeService::class.java)
-        gattServiceIntent.putExtra(BluetoothLeService.DEVICE_ADDRESS, heartRateAddress)
-        bindService(gattServiceIntent, heartRateServiceConnection, Context.BIND_AUTO_CREATE)
-    }
-
-    // Code to manage Service lifecycle.
-    private val heartRateServiceConnection: ServiceConnection = object : ServiceConnection {
-        override fun onServiceConnected(componentName: ComponentName, service: IBinder) {
-            bluetoothService = (service as BluetoothLeService.LocalBinder).getService()
-            bluetoothService?.let {
-                if (!it.initialize()) {
-                    Log.e(TAG, "Unable to initialize Bluetooth")
-                    finish()
-                }
-                it.connect()
-            }
-        }
-
-        override fun onServiceDisconnected(componentName: ComponentName) {
-            bluetoothService = null
-        }
-    }
-
-    private val gattUpdateReceiver: BroadcastReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            when (intent.action) {
-                BluetoothLeService.ACTION_GATT_CONNECTED -> {
-                    // connected = true
-                }
-                BluetoothLeService.ACTION_GATT_DISCONNECTED -> {
-                    // connected = false
-                }
-            }
-        }
-    }
-
-    override fun onResume() {
-        super.onResume()
-        registerReceiver(gattUpdateReceiver, makeGattUpdateIntentFilter())
-        if (bluetoothService != null) {
-            val result = bluetoothService!!.connect()
-            Log.d(TAG, "Connect request result=$result")
-        }
-    }
-
-    private fun makeGattUpdateIntentFilter(): IntentFilter? {
-        return IntentFilter().apply {
-            addAction(BluetoothLeService.ACTION_GATT_CONNECTED)
-            addAction(BluetoothLeService.ACTION_GATT_DISCONNECTED)
-        }
-    }
-
-    override fun onPause() {
-        super.onPause()
-        unregisterReceiver(gattUpdateReceiver)
+        val intent = Intent(this, HeartRateActivity::class.java)
+        startActivity(intent)
     }
 
     private suspend fun scan(uuid: String): String? {
@@ -142,16 +89,12 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
     companion object {
         val HEARTRATE_ADDRESS = "HEARTRATE_ADDRESS"
         val BIKE_ADDRESS = "BIKE_ADDRESS"
-        val HEART_RATE_UUID = "0000180D-0000-1000-8000-00805f9b34fb"
-        val BIKE_UUID = "00001816-0000-1000-8000-00805f9b34fb"
     }
 
     override val coroutineContext = Dispatchers.Main
 
     private var heartRateAddress: String? = null
     private var bikeAddress: String? = null
-    private var bluetoothService : BluetoothLeService? = null
     private val activityRequest = ActivityRequest(this)
 }
 
-private const val TAG = "MainActivity"
