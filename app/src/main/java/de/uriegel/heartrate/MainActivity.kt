@@ -2,10 +2,12 @@ package de.uriegel.heartrate
 
 import android.Manifest
 import android.bluetooth.BluetoothAdapter
-import android.content.Intent
+import android.content.*
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.os.IBinder
+import android.util.Log
 import android.view.View
 import android.widget.Toast
 import de.uriegel.activityextensions.ActivityRequest
@@ -72,6 +74,64 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
         }
     }
 
+    fun startHeartRate(view: View) {
+        val gattServiceIntent = Intent(this, BluetoothLeService::class.java)
+        gattServiceIntent.putExtra(BluetoothLeService.DEVICE_ADDRESS, heartRateAddress)
+        bindService(gattServiceIntent, heartRateServiceConnection, Context.BIND_AUTO_CREATE)
+    }
+
+    // Code to manage Service lifecycle.
+    private val heartRateServiceConnection: ServiceConnection = object : ServiceConnection {
+        override fun onServiceConnected(componentName: ComponentName, service: IBinder) {
+            bluetoothService = (service as BluetoothLeService.LocalBinder).getService()
+            bluetoothService?.let {
+                if (!it.initialize()) {
+                    Log.e(TAG, "Unable to initialize Bluetooth")
+                    finish()
+                }
+                it.connect()
+            }
+        }
+
+        override fun onServiceDisconnected(componentName: ComponentName) {
+            bluetoothService = null
+        }
+    }
+
+    private val gattUpdateReceiver: BroadcastReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            when (intent.action) {
+                BluetoothLeService.ACTION_GATT_CONNECTED -> {
+                    // connected = true
+                }
+                BluetoothLeService.ACTION_GATT_DISCONNECTED -> {
+                    // connected = false
+                }
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        registerReceiver(gattUpdateReceiver, makeGattUpdateIntentFilter())
+        if (bluetoothService != null) {
+            val result = bluetoothService!!.connect()
+            Log.d(TAG, "Connect request result=$result")
+        }
+    }
+
+    private fun makeGattUpdateIntentFilter(): IntentFilter? {
+        return IntentFilter().apply {
+            addAction(BluetoothLeService.ACTION_GATT_CONNECTED)
+            addAction(BluetoothLeService.ACTION_GATT_DISCONNECTED)
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        unregisterReceiver(gattUpdateReceiver)
+    }
+
     private suspend fun scan(uuid: String): String? {
         val intent = Intent(this@MainActivity, DevicesActivity::class.java)
         intent.putExtra("UUID", uuid)
@@ -82,12 +142,16 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
     companion object {
         val HEARTRATE_ADDRESS = "HEARTRATE_ADDRESS"
         val BIKE_ADDRESS = "BIKE_ADDRESS"
+        val HEART_RATE_UUID = "0000180D-0000-1000-8000-00805f9b34fb"
+        val BIKE_UUID = "00001816-0000-1000-8000-00805f9b34fb"
     }
 
-    val HEART_RATE_UUID = "0000180D-0000-1000-8000-00805f9b34fb"
-    val BIKE_UUID = "00001816-0000-1000-8000-00805f9b34fb"
-    var heartRateAddress: String? = null
-    var bikeAddress: String? = null
     override val coroutineContext = Dispatchers.Main
+
+    private var heartRateAddress: String? = null
+    private var bikeAddress: String? = null
+    private var bluetoothService : BluetoothLeService? = null
     private val activityRequest = ActivityRequest(this)
 }
+
+private const val TAG = "MainActivity"

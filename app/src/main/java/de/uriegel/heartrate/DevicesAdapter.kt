@@ -38,9 +38,7 @@ class DevicesAdapter(private val clickListener: ((track: BluetoothDevice)->Unit)
         holder.deviceAddressView.text = devices[position].address
     }
 
-    override fun getItemCount(): Int {
-        return devices.count()
-    }
+    override fun getItemCount() = devices.count()
 
     private val devices: MutableList<BluetoothDevice> = mutableListOf()
 }
