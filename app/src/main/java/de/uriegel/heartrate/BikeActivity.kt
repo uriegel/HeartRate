@@ -1,9 +1,6 @@
 package de.uriegel.heartrate
 
-import android.content.ComponentName
-import android.content.Context
-import android.content.Intent
-import android.content.ServiceConnection
+import android.content.*
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.IBinder
@@ -18,11 +15,41 @@ class BikeActivity : AppCompatActivity() {
         setContentView(binding.root)
         if (deviceAddress != null) {
             val gattServiceIntent = Intent(this, BluetoothLeService::class.java)
-            bindService(gattServiceIntent, heartRateServiceConnection, Context.BIND_AUTO_CREATE)
+            bindService(gattServiceIntent, serviceConnection, Context.BIND_AUTO_CREATE)
         }
     }
 
-    private val heartRateServiceConnection: ServiceConnection = object : ServiceConnection {
+    override fun onResume() {
+        super.onResume()
+        registerReceiver(gattUpdateReceiver, BluetoothLeService.makeGattUpdateIntentFilter())
+        if (bluetoothService != null) {
+            val result = bluetoothService!!.connect(deviceAddress!!)
+            Log.d(TAG, "Connect request result=$result")
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        unregisterReceiver(gattUpdateReceiver)
+    }
+
+    private val gattUpdateReceiver: BroadcastReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            when (intent.action) {
+                BluetoothLeService.ACTION_GATT_CONNECTED -> {
+                    // connected = true
+                }
+                BluetoothLeService.ACTION_GATT_DISCONNECTED -> {
+                    // connected = false
+                }
+                HeartRateService.ACTION_GATT_HEART_RATE -> {
+//                    binding.textViewHeartRate.text = intent.getIntExtra(HeartRateService.HEART_RATE, 0).toString()
+                }
+            }
+        }
+    }
+
+    private val serviceConnection: ServiceConnection = object : ServiceConnection {
         override fun onServiceConnected(componentName: ComponentName, service: IBinder) {
             bluetoothService = (service as BluetoothLeService.LocalBinder).getService()
             bluetoothService?.let {
