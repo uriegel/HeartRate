@@ -8,7 +8,7 @@ import android.content.Intent
 import java.util.*
 
 class BikeService : BluetoothLeService() {
-    override fun getUuid() = BikeService.BIKE_UUID
+    override fun getUuid() = BIKE_UUID
 
     override fun discoverService(bluetoothGatt: BluetoothGatt, service: BluetoothGattService) {
         val bikeCharacteristics = service.characteristics?.find { it.uuid == UUID.fromString(BIKE_CHARACTERISTICS_ID) }
@@ -22,29 +22,36 @@ class BikeService : BluetoothLeService() {
 
     override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
         val flag = characteristic.properties
-        val eins = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT32, 1) // wheel cycles
-        val zwei = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT16, 5) // timestamp wheel
-        val drei = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT16, 7) // pedal cycles
-        val vier = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT16, 9) // timestamp pedal
-        if (eins > 0 || zwei > 0  || drei > 0 || vier > 0) {
-            val mist = eins > 0 || zwei > 0  || drei > 0 || vier > 0
-            val letzt = 0
-        } else {
-            val watt = 0
+        val wheelCycles = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT32, 1)
+        val timestampWheel = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT16, 5)
+        val crankCycles = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT16, 7)
+        val timestampCrank = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT16, 9)
+        if (lastWheelCycles != wheelCycles) {
+            val timeSpan = if (timestampWheel > lastTimestampWheel)
+                timestampWheel - lastTimestampWheel
+            else
+                timestampWheel + 0x10000 - lastTimestampWheel
+            val cyclesPerSecs = (wheelCycles - lastWheelCycles).toFloat() / timeSpan.toFloat() * 1024
+            val speed = 2.14 * cyclesPerSecs * 3.6
+            broadcastBikeUpdate(speed)
+            lastWheelCycles = wheelCycles
+            lastTimestampWheel = timestampWheel
         }
     }
 
-    private fun broadcastBikeUpdate(rate: Int) {
+    private fun broadcastBikeUpdate(rate: Double) {
         val intent = Intent(ACTION_GATT_DATA)
-//        intent.putExtra(HeartRateService.HEART_RATE, rate)
+        intent.putExtra(BIKE_RATE, rate)
         sendBroadcast(intent)
     }
 
     override fun getTag() = "BIKE"
+    var lastWheelCycles = 0
+    var lastTimestampWheel = 0
 
     companion object {
         const val BIKE_UUID = "00001816-0000-1000-8000-00805f9b34fb"
         const val BIKE_CHARACTERISTICS_ID = "00002a5b-0000-1000-8000-00805f9b34fb"
-        //const val HEART_RATE = "HEART_RATE"
+        const val BIKE_RATE = "BIKE_RATE"
     }
 }

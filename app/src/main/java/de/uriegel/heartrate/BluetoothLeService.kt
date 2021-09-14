@@ -103,7 +103,7 @@ abstract class BluetoothLeService : Service() {
             return IntentFilter().apply {
                 addAction(ACTION_GATT_CONNECTED)
                 addAction(ACTION_GATT_DISCONNECTED)
-                addAction(HeartRateService.ACTION_GATT_HEART_RATE)
+                addAction(ACTION_GATT_DATA)
             }
         }
 

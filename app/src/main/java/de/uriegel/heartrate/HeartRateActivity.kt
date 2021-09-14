@@ -5,12 +5,14 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.IBinder
 import android.util.Log
+import android.view.WindowManager
 import de.uriegel.heartrate.BluetoothLeService.Companion.makeGattUpdateIntentFilter
 import de.uriegel.heartrate.databinding.ActivityHeartRateBinding
 
 class HeartRateActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         binding = ActivityHeartRateBinding.inflate(layoutInflater)
         setContentView(binding.root)
         if (deviceAddress != null) {
@@ -42,7 +44,7 @@ class HeartRateActivity : AppCompatActivity() {
                 BluetoothLeService.ACTION_GATT_DISCONNECTED -> {
                     // connected = false
                 }
-                HeartRateService.ACTION_GATT_HEART_RATE -> {
+                BluetoothLeService.ACTION_GATT_DATA -> {
                     binding.textViewHeartRate.text = intent.getIntExtra(HeartRateService.HEART_RATE, 0).toString()
                 }
             }

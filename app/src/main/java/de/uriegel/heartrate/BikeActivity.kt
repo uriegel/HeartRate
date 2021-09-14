@@ -5,12 +5,16 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.IBinder
 import android.util.Log
+import android.view.WindowManager
 import de.uriegel.heartrate.databinding.ActivityBikeBinding
 import de.uriegel.heartrate.databinding.ActivityHeartRateBinding
 
 class BikeActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+
         binding = ActivityBikeBinding.inflate(layoutInflater)
         setContentView(binding.root)
         if (deviceAddress != null) {
@@ -42,8 +46,8 @@ class BikeActivity : AppCompatActivity() {
                 BluetoothLeService.ACTION_GATT_DISCONNECTED -> {
                     // connected = false
                 }
-                HeartRateService.ACTION_GATT_HEART_RATE -> {
-//                    binding.textViewHeartRate.text = intent.getIntExtra(HeartRateService.HEART_RATE, 0).toString()
+                BluetoothLeService.ACTION_GATT_DATA -> {
+                    binding.textViewSpeed.text = "%.1f".format(intent.getDoubleExtra(BikeService.BIKE_RATE, 0.0))
                 }
             }
         }

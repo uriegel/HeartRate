@@ -38,7 +38,7 @@ class HeartRateService : BluetoothLeService() {
     }
 
     private fun broadcastHeartRateUpdate(rate: Int) {
-        val intent = Intent(ACTION_GATT_HEART_RATE)
+        val intent = Intent(ACTION_GATT_DATA)
         intent.putExtra(HEART_RATE, rate)
         sendBroadcast(intent)
     }
@@ -48,7 +48,6 @@ class HeartRateService : BluetoothLeService() {
     companion object {
         const val HEART_RATE_UUID = "0000180D-0000-1000-8000-00805f9b34fb"
         const val HEART_RATE_CHARACTERISTICS_ID = "00002a37-0000-1000-8000-00805f9b34fb"
-        const val ACTION_GATT_HEART_RATE = "de.uriegel.heartrate.ACTION_DATA_AVAILABLE"
         const val HEART_RATE = "HEART_RATE"
     }
 }
