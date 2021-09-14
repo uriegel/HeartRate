@@ -14,7 +14,7 @@ class BikeActivity : AppCompatActivity() {
         binding = ActivityBikeBinding.inflate(layoutInflater)
         setContentView(binding.root)
         if (deviceAddress != null) {
-            val gattServiceIntent = Intent(this, BluetoothLeService::class.java)
+            val gattServiceIntent = Intent(this, BikeService::class.java)
             bindService(gattServiceIntent, serviceConnection, Context.BIND_AUTO_CREATE)
         }
     }
