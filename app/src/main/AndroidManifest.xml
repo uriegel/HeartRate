@@ -16,6 +16,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.HeartRate">
         <activity
+            android:name=".BikeActivity"
+            android:exported="true" />
+        <activity
             android:name=".HeartRateActivity"
             android:exported="true" />
         <activity
@@ -31,7 +34,8 @@
             </intent-filter>
         </activity>
 
-        <service android:name=".BluetoothLeService" />
+        <service android:name=".HeartRateService" />
+        <service android:name=".BikeService" />
     </application>
 
 </manifest>

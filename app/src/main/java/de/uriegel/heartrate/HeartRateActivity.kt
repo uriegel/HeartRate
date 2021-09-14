@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.IBinder
 import android.util.Log
+import de.uriegel.heartrate.BluetoothLeService.Companion.makeGattUpdateIntentFilter
 import de.uriegel.heartrate.databinding.ActivityHeartRateBinding
 
 class HeartRateActivity : AppCompatActivity() {
@@ -13,7 +14,7 @@ class HeartRateActivity : AppCompatActivity() {
         binding = ActivityHeartRateBinding.inflate(layoutInflater)
         setContentView(binding.root)
         if (deviceAddress != null) {
-            val gattServiceIntent = Intent(this, BluetoothLeService::class.java)
+            val gattServiceIntent = Intent(this, HeartRateService::class.java)
             bindService(gattServiceIntent, heartRateServiceConnection, Context.BIND_AUTO_CREATE)
         }
     }
@@ -41,18 +42,10 @@ class HeartRateActivity : AppCompatActivity() {
                 BluetoothLeService.ACTION_GATT_DISCONNECTED -> {
                     // connected = false
                 }
-                BluetoothLeService.ACTION_GATT_HEART_RATE -> {
-                    binding.textViewHeartRate.text = intent.getIntExtra(BluetoothLeService.HEART_RATE, 0).toString()
+                HeartRateService.ACTION_GATT_HEART_RATE -> {
+                    binding.textViewHeartRate.text = intent.getIntExtra(HeartRateService.HEART_RATE, 0).toString()
                 }
             }
-        }
-    }
-
-    private fun makeGattUpdateIntentFilter(): IntentFilter {
-        return IntentFilter().apply {
-            addAction(BluetoothLeService.ACTION_GATT_CONNECTED)
-            addAction(BluetoothLeService.ACTION_GATT_DISCONNECTED)
-            addAction(BluetoothLeService.ACTION_GATT_HEART_RATE)
         }
     }
 

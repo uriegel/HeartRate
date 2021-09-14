@@ -3,13 +3,14 @@ package de.uriegel.heartrate
 import android.app.Service
 import android.bluetooth.*
 import android.content.Intent
+import android.content.IntentFilter
 import android.os.Binder
 import android.os.IBinder
 import android.os.ParcelUuid
 import android.util.Log
 import java.util.*
 
-class BluetoothLeService : Service() {
+abstract class BluetoothLeService : Service() {
     override fun onBind(intent: Intent): IBinder = binder
 
     override fun onUnbind(intent: Intent?): Boolean {
@@ -20,7 +21,7 @@ class BluetoothLeService : Service() {
     fun initialize(): Boolean {
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
         if (bluetoothAdapter == null) {
-            Log.e(TAG, "Unable to obtain a BluetoothAdapter.")
+            Log.e(getTag(), "Unable to obtain a BluetoothAdapter.")
             return false
         }
         return true
@@ -33,12 +34,11 @@ class BluetoothLeService : Service() {
                 bluetoothGatt = device.connectGatt(this, false, bluetoothGattCallback)
                 true
             } catch (exception: IllegalArgumentException) {
-                Log.w(TAG, "Device not found with provided address.")
+                Log.w(getTag(), "Device not found with provided address.")
                 false
             }
-            // connect to the GATT server on the device
         } ?: run {
-            Log.w(TAG, "BluetoothAdapter not initialized")
+            Log.w(getTag(), "BluetoothAdapter not initialized")
             false
         }
 
@@ -59,60 +59,29 @@ class BluetoothLeService : Service() {
 
         override fun onServicesDiscovered(gatt: BluetoothGatt?, status: Int) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
-                bluetoothGatt?.services?.let {
-                    val service = it.find { it.uuid == UUID.fromString(HEART_RATE_UUID) }
-                    service?.let {
-                        val heartCharacteristics = it.characteristics?.find { it.uuid == UUID.fromString(HEART_RATE_CHARACTERISTICS_ID) }
-                        heartCharacteristics?.let {
-                            val flag = it.properties
-                            val format = when (flag and 0x01) {
-                                0x01 -> {
-                                    Log.d(TAG, "Heart rate format UINT16.")
-                                    BluetoothGattCharacteristic.FORMAT_UINT16
-                                }
-                                else -> {
-                                    Log.d(TAG, "Heart rate format UINT8.")
-                                    BluetoothGattCharacteristic.FORMAT_UINT8
-                                }
-                            }
-                            bluetoothGatt!!.setCharacteristicNotification(it, true)
-                            // TODO: only Heart Rate
-                            val descriptor = it.getDescriptor(UUID.fromString(CLIENT_CHARACTERISTICS_ID))
-                            descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
-                            bluetoothGatt!!.writeDescriptor(descriptor)
-                        }
+                bluetoothGatt?.let {
+                    it.services?.let { services ->
+                        services.find { it.uuid == UUID.fromString(getUuid()) }
+                            ?.let { service -> discoverService(it, service) }
                     }
                 }
             } else {
-                Log.w(TAG, "onServicesDiscovered received: $status")
+                Log.w(getTag(), "onServicesDiscovered received: $status")
             }
         }
 
         override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
-            val flag = characteristic.properties
-            val format = when (flag and 0x01) {
-                0x01 -> {
-                    Log.d(TAG, "Heart rate format UINT16.")
-                    BluetoothGattCharacteristic.FORMAT_UINT16
-                }
-                else -> {
-                    Log.d(TAG, "Heart rate format UINT8.")
-                    BluetoothGattCharacteristic.FORMAT_UINT8
-                }
-            }
-            val heartRate = characteristic.getIntValue(format, 1)
-            broadcastHeartRateUpdate(heartRate)
+            this@BluetoothLeService.onCharacteristicChanged(gatt, characteristic)
         }
     }
 
+    protected abstract fun discoverService(bluetoothGatt: BluetoothGatt, service: BluetoothGattService)
+    protected abstract fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic)
+    protected abstract fun getUuid(): String
+    protected abstract fun getTag(): String
+
     private fun broadcastUpdate(action: String) {
         val intent = Intent(action)
-        sendBroadcast(intent)
-    }
-
-    private fun broadcastHeartRateUpdate(rate: Int) {
-        val intent = Intent(ACTION_GATT_HEART_RATE)
-        intent.putExtra(HEART_RATE, rate)
         sendBroadcast(intent)
     }
 
@@ -130,16 +99,20 @@ class BluetoothLeService : Service() {
     }
 
     companion object {
-        const val HEART_RATE_UUID = "0000180D-0000-1000-8000-00805f9b34fb"
-        const val BIKE_UUID = "00001816-0000-1000-8000-00805f9b34fb"
-        const val HEART_RATE_CHARACTERISTICS_ID = "00002a37-0000-1000-8000-00805f9b34fb"
+        fun makeGattUpdateIntentFilter(): IntentFilter {
+            return IntentFilter().apply {
+                addAction(ACTION_GATT_CONNECTED)
+                addAction(ACTION_GATT_DISCONNECTED)
+                addAction(HeartRateService.ACTION_GATT_HEART_RATE)
+            }
+        }
+
         const val BATTERY_CHARACTERISTICS_ID = "00002a38-0000-1000-8000-00805f9b34fb"
         const val CLIENT_CHARACTERISTICS_ID = "00002902-0000-1000-8000-00805f9b34fb"
         const val DEVICE_ADDRESS = "DEVICE_ADDRESS"
         const val ACTION_GATT_CONNECTED = "de.uriegel.heartrate.ACTION_GATT_CONNECTED"
         const val ACTION_GATT_DISCONNECTED = "de.uriegel.heartrate.ACTION_GATT_DISCONNECTED"
-        const val ACTION_GATT_HEART_RATE = "de.uriegel.heartrate.ACTION_DATA_AVAILABLE"
-        const val HEART_RATE = "HEART_RATE"
+        const val ACTION_GATT_DATA = "de.uriegel.heartrate.ACTION_DATA_AVAILABLE"
         private const val STATE_DISCONNECTED = 0
         private const val STATE_CONNECTED = 2
     }
@@ -150,4 +123,3 @@ class BluetoothLeService : Service() {
     private var connectionState = STATE_DISCONNECTED
 }
 
-private const val TAG = "BluetoothLeService"

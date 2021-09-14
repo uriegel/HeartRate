@@ -55,26 +55,35 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
         }
     }
 
+    @Suppress("UNUSED_PARAMETER")
     fun onScanHeartRate(view: View) {
         launch {
-            heartRateAddress = scan(BluetoothLeService.HEART_RATE_UUID)
+            heartRateAddress = scan(HeartRateService.HEART_RATE_UUID)
             binding.btnHeartRate.isEnabled = heartRateAddress != null
             val preferences = getSharedPreferences("default", MODE_PRIVATE)
             preferences?.edit()?.putString(HEARTRATE_ADDRESS, heartRateAddress)?.apply()
         }
     }
 
+    @Suppress("UNUSED_PARAMETER")
     fun onScanBike(view: View) {
         launch {
-            bikeAddress = scan(BluetoothLeService.BIKE_UUID)
+            bikeAddress = scan(BikeService.BIKE_UUID)
             binding.btnBike.isEnabled = bikeAddress != null
             val preferences = getSharedPreferences("default", MODE_PRIVATE)
             preferences?.edit()?.putString(BIKE_ADDRESS, bikeAddress)?.apply()
         }
     }
 
+    @Suppress("UNUSED_PARAMETER")
     fun startHeartRate(view: View) {
         val intent = Intent(this, HeartRateActivity::class.java)
+        startActivity(intent)
+    }
+
+    @Suppress("UNUSED_PARAMETER")
+    fun startBike(view: View) {
+        val intent = Intent(this, BikeActivity::class.java)
         startActivity(intent)
     }
 

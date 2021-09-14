@@ -6,6 +6,7 @@ import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
+import android.os.Looper
 import android.os.ParcelUuid
 import android.util.Log
 import androidx.recyclerview.widget.DividerItemDecoration
@@ -66,7 +67,7 @@ class DevicesActivity() : AppCompatActivity() {
     }
 
     private var scanning = false
-    private val handler = Handler()
+    private val handler = Handler(Looper.getMainLooper())
     private val SCAN_PERIOD = 10000L
     private var devicesAdapter = DevicesAdapter {
         val intent = Intent()
